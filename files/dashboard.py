@@ -34,11 +34,53 @@ try:
     )
     df["time_s"] = df["time_ms"].astype(float) / 1000
 
-    col1, col2 = st.columns(2)
+    latest = df.iloc[-1]
+    p1 = float(latest["P1_psi"])
+    p2 = float(latest["P2_psi"])
+    delta = abs(p1 - p2)
+
+    if len(df) >= 5:
+        recent_drop_1 = p1 - float(df["P1_psi"].iloc[-5])
+        recent_drop_2 = p2 - float(df["P2_psi"].iloc[-5])
+    else:
+        recent_drop_1 = 0
+        recent_drop_2 = 0
+
+    if p1 < 30 or p2 < 30 or recent_drop_1 < -10 or recent_drop_2 < -10:
+        status = "ALARM"
+        color = "#c62828"
+    elif p1 < 45 or p2 < 45 or delta > 8:
+        status = "WARNING"
+        color = "#ef6c00"
+    else:
+        status = "NORMAL"
+        color = "#2e7d32"
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color:{color};
+            color:white;
+            padding:15px;
+            border-radius:10px;
+            font-size:22px;
+            font-weight:bold;
+            text-align:center;
+            margin-bottom:20px;
+        ">
+            System Status: {status}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Sensor 1 pressure (PSI)", f"{df['P1_psi'].iloc[-1]:.2f}")
+        st.metric("Sensor 1 pressure (PSI)", f"{p1:.2f}")
     with col2:
-        st.metric("Sensor 2 pressure (PSI)", f"{df['P2_psi'].iloc[-1]:.2f}")
+        st.metric("Sensor 2 pressure (PSI)", f"{p2:.2f}")
+    with col3:
+        st.metric("Pressure Difference (PSI)", f"{delta:.2f}")
 
     st.subheader("Pressure vs. Time")
     st.line_chart(
