@@ -19,9 +19,20 @@ st.set_page_config(page_title="Pressure Monitor", layout="wide")
 st.title("Compressed Air Pressure Monitor")
 
 # Use a logger-created file beside this script, or the demo file in the project folder.
-CSV_FILE = Path(__file__).resolve().parent / "pressure_log.csv"
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = SCRIPT_DIR.parent
+CSV_FILE = SCRIPT_DIR / "pressure_log.csv"
 if not CSV_FILE.exists():
-    CSV_FILE = CSV_FILE.parent.parent / "pressure_log.csv"
+    CSV_FILE = PROJECT_DIR / "pressure_log.csv"
+
+DATA_SOURCES = {
+    "Current log": CSV_FILE,
+    "Normal example": PROJECT_DIR / "test_data" / "pressure_normal.csv",
+    "Warning example": PROJECT_DIR / "test_data" / "pressure_warning.csv",
+    "Alarm example": PROJECT_DIR / "test_data" / "pressure_alarm.csv",
+}
+selected_source = st.selectbox("Data source", DATA_SOURCES)
+CSV_FILE = DATA_SOURCES[selected_source]
 
 # Auto-refresh every 2 seconds so the dashboard updates while simple_logger.py runs
 st_autorefresh = st.empty()
@@ -91,6 +102,6 @@ try:
     st.dataframe(df.tail(20))
 
 except FileNotFoundError:
-    st.warning(f"Waiting for {CSV_FILE} — add pressure_log.csv or start simple_logger.py first.")
+    st.warning(f"Selected data source was not found: {CSV_FILE}")
 except Exception as e:
     st.error(f"Error reading data: {e}")
