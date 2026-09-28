@@ -31,7 +31,16 @@ DATA_SOURCES = {
     "Warning example": PROJECT_DIR / "test_data" / "pressure_warning.csv",
     "Alarm example": PROJECT_DIR / "test_data" / "pressure_alarm.csv",
 }
+
+TIME_WINDOWS = {
+    "Last 5 minutes": 300,
+    "Last 30 minutes": 1800,
+    "Last 1 hour": 3600,
+    "All data": None,
+}
+
 selected_source = st.selectbox("Data source", DATA_SOURCES)
+selected_window_label = st.selectbox("Time window", list(TIME_WINDOWS.keys()))
 CSV_FILE = DATA_SOURCES[selected_source]
 
 # Auto-refresh every 2 seconds so the dashboard updates while simple_logger.py runs
@@ -44,6 +53,15 @@ try:
         header=0,  # first row from the Arduino is a header line
     )
     df["time_s"] = df["time_ms"].astype(float) / 1000
+
+    window_seconds = TIME_WINDOWS[selected_window_label]
+    if window_seconds is not None and not df.empty:
+        max_time = df["time_s"].max()
+        df = df[df["time_s"] >= max_time - window_seconds].copy()
+
+    if df.empty:
+        st.warning("No data is available for the selected time window.")
+        st.stop()
 
     latest = df.iloc[-1]
     p1 = float(latest["P1_psi"])
@@ -93,10 +111,20 @@ try:
     with col3:
         st.metric("Pressure Difference (PSI)", f"{delta:.2f}")
 
-    st.subheader("Pressure vs. Time")
+    st.subheader(f"Pressure vs. Time - {selected_window_label}")
+    st.caption(f"Showing {len(df)} samples from the selected window.")
     st.line_chart(
         df.set_index("time_s")[["P1_psi", "P2_psi"]]
     )
+
+    st.subheader("Trend summary")
+    trend_col1, trend_col2, trend_col3 = st.columns(3)
+    with trend_col1:
+        st.metric("Average Sensor 1", f"{df['P1_psi'].mean():.2f} PSI")
+    with trend_col2:
+        st.metric("Average Sensor 2", f"{df['P2_psi'].mean():.2f} PSI")
+    with trend_col3:
+        st.metric("Lowest pressure", f"{min(df['P1_psi'].min(), df['P2_psi'].min()):.2f} PSI")
 
     st.subheader("Raw data (most recent samples)")
     st.dataframe(df.tail(20))
