@@ -14,7 +14,7 @@ import time
 
 # ---- USER SETTINGS ----
 PORT = "/dev/tty.usbmodemXXXX"   # Change to your Arduino's port (see note below)
-BAUD = 115200                     # Must match Serial.begin() in the .ino file
+BAUD = 9600                       # Must match Serial.begin() in the .ino file
 OUTFILE = "pressure_log.csv"
 # ------------------------
 
